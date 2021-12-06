@@ -1,159 +1,116 @@
-;(function() {
-  var extra = {}
+(function() {
+    var extra = {};
 
-  c3.chart.internal.fn.additionalConfig = {
-    data_pairs: []
-  }
+    c3.chart.internal.fn.additionalConfig = {
+        data_pairs: [],
+    };
 
-  c3.chart.internal.fn.beforeInit = function(config) {
-    var that = this
+    c3.chart.internal.fn.beforeInit = function (config) {
 
-    // update internals only when chart type is "bubble"
-    if (config.data.type !== 'bubble') {
-      return
-    }
+        var that = this;
 
-    // Set extra to ba able to be used in other part
-    this.extra = extra
+        // update internals only when chart type is "bubble"
+        if (config.data.type !== 'bubble') {
+            return;
+        }
 
-    extra.getKey = function(x, y) {
-      return x + '::' + y
-    }
+        // Set extra to ba able to be used in other part
+        this.extra = extra;
 
-    this.config.data_type = 'scatter'
+        extra.getKey = function (x, y) {
+            return x + '::' + y;
+        };
 
-    this.config.axis_x_padding = 0
-    this.config.axis_y_padding = 0
-    this.config.axis_x_tick_centered = true
-    this.config.axis_x_tick_format = function(d) {
-      return extra.names[d]
-    }
-    this.config.axis_y_tick_format = function(d) {
-      return extra.names[d]
-    }
+        this.config.data_type = 'scatter';
 
-    if (!config.color || !config.color.pattern) {
-      this.config.color_pattern = ['#1f77b4']
-    }
+        this.config.axis_x_padding = 0;
+        this.config.axis_y_padding = 0;
+        this.config.axis_x_tick_centered = true;
+        this.config.axis_x_tick_format = function (d) {
+            return extra.names[d];
+        };
+        this.config.axis_y_tick_format = function (d) {
+            return extra.names[d];
+        };
 
-    this.config.point_r = function(d) {
-      var names = extra.names,
-        values = extra.values,
-        base_length = extra.base_length,
-        x = names[d.x],
-        y = d.id,
-        key = extra.getKey(x, y),
-        value = !values[key] ? 0 : values[key],
-        max,
-        max_r,
-        max_area,
-        a,
-        area,
-        r
+        if (!config.color || !config.color.pattern) {
+            this.config.color_pattern = ['#1f77b4'];
+        }
 
-      if (!base_length) {
-        base_length = extra.base_length = d3.min([
-          that.svg
-            .select('.c3-axis.c3-axis-y path')
-            .node()
-            .getTotalLength(),
-          that.svg
-            .select('.c3-axis.c3-axis-x path')
-            .node()
-            .getTotalLength()
-        ])
-      }
+        this.config.point_r = function (d) {
+            var names = extra.names, values = extra.values, base_length = extra.base_length,
+                x = names[d.x], y = d.id,
+                key = extra.getKey(x, y), value = !values[key] ? 0 : values[key],
+                max, max_r, max_area, a, area, r;
 
-      max = d3.max(
-        Object.keys(values).map(function(key) {
-          return values[key]
-        })
-      )
-      max_r = base_length / (names.length * 2)
-      max_area = max_r * max_r * Math.PI
+            if (!base_length) {
+                base_length = extra.base_length = d3.min([
+                    that.svg.select('.c3-axis.c3-axis-y path').node().getTotalLength(),
+                    that.svg.select('.c3-axis.c3-axis-x path').node().getTotalLength(),
+                ]);
+            }
 
-      a = max_area / max
+            max = d3.max(Object.keys(values).map(function (key) { return values[key]; }));
+            max_r = (base_length / (names.length * 2));
+            max_area = max_r * max_r * Math.PI;
 
-      area = value * a
-      r = Math.sqrt(area / Math.PI)
+            a = max_area / max;
 
-      return r
-    }
-    this.config.point_sensitivity = 25
-    this.config.point_focus_expand_enabled = false
+            area = value * a;
+            r = Math.sqrt(area / Math.PI);
 
-    this.config.legend_show = false
+            return r;
+        };
+        this.config.point_sensitivity = 25;
+        this.config.point_focus_expand_enabled = false;
 
-    if (!config.tooltip || !config.tooltip.contents) {
-      this.config.tooltip_contents = function(
-        d,
-        defaultTitleFormat,
-        defaultValueFormat,
-        color
-      ) {
-        var x = extra.names[d[0].x],
-          y = d[0].name,
-          v = extra.values[extra.getKey(x, y)],
-          text
+        this.config.legend_show = false;
 
-        text = "<table class='" + this.CLASS.tooltip + "'>"
-        text += "<tr><th colspan='2'>" + x + '&nbsp;/&nbsp;' + y + '</th></tr>'
-        text += "<tr><td class='value'>" + (!v ? 0 : v) + '</td></tr>'
-        text += '</table>'
+        if (!config.tooltip || !config.tooltip.contents) {
+            this.config.tooltip_contents = function (d, defaultTitleFormat, defaultValueFormat, color) {
+                var x = extra.names[d[0].x], y = d[0].name, v = extra.values[extra.getKey(x, y)], text;
 
-        return text
-      }
-    }
+                text = "<table class='" + this.CLASS.tooltip + "'>";
+                text += "<tr><th colspan='2'>" + x + "&nbsp;/&nbsp;" + y + "</th></tr>";
+                text += "<tr><td class='value'>" + (!v ? 0 : v) + "</td></tr>";
+                text += "</table>";
 
-    // construct bubble chart data and setup config based on the values
+                return text;
+            };
+        }
 
-    var xs = this.config.data_pairs.map(function(pair) {
-        return pair.x
-      }),
-      ys = this.config.data_pairs.map(function(pair) {
-        return pair.y
-      })
+        // construct bubble chart data and setup config based on the values
 
-    extra.names = d3
-      .set(xs.concat(ys))
-      .values()
-      .sort()
+        var xs = this.config.data_pairs.map(function (pair) { return pair.x; }),
+            ys = this.config.data_pairs.map(function (pair) { return pair.y; });
 
-    this.config.axis_y_tick_values = extra.names.map(function(name, i) {
-      return i
-    })
+        extra.names = d3.set(xs.concat(ys)).values().sort();
 
-    var data_xs = {}
-    extra.names.forEach(function(name) {
-      data_xs[name] = name + '_x'
-    })
-    var data_columns_xs = Object.keys(data_xs).map(function(key) {
-      return [data_xs[key]].concat(
-        extra.names.map(function(name, i) {
-          return i
-        })
-      )
-    })
-    var data_columns_values = extra.names.map(function(name, i) {
-      return [name].concat(
-        extra.names.map(function(name) {
-          return i
-        })
-      )
-    })
-    this.config.data_xs = data_xs
-    this.config.data_columns = data_columns_xs.concat(data_columns_values)
+        this.config.axis_y_tick_values = extra.names.map(function (name, i) { return i; });
 
-    var values = {}
-    this.config.data_pairs.forEach(function(pair) {
-      if (!pair.x || !pair.y) {
-        throw 'x and y are required in data.'
-      }
-      values[extra.getKey(pair.x, pair.y)] = pair.value
-    })
-    extra.values = values
+        var data_xs = {};
+        extra.names.forEach(function (name) {
+            data_xs[name] = name + '_x';
+        });
+        var data_columns_xs = Object.keys(data_xs).map(function (key) {
+            return [data_xs[key]].concat(extra.names.map(function (name, i) { return i; }));
+        });
+        var data_columns_values = extra.names.map(function (name, i) {
+            return [name].concat(extra.names.map(function (name) { return i; }));
+        });
+        this.config.data_xs = data_xs;
+        this.config.data_columns = data_columns_xs.concat(data_columns_values);
 
-    this.config.axis_x_min = this.config.axis_y_min = -0.5
-    this.config.axis_x_max = this.config.axis_y_max = extra.names.length - 0.5
-  }
-})(window)
+        var values = {};
+        this.config.data_pairs.forEach(function (pair) {
+            if (!pair.x || !pair.y) {
+                throw "x and y are required in data.";
+            }
+            values[extra.getKey(pair.x, pair.y)] = pair.value;
+        });
+        extra.values = values;
+
+        this.config.axis_x_min = this.config.axis_y_min = -0.5;
+        this.config.axis_x_max = this.config.axis_y_max = extra.names.length - 0.5;
+    };
+})(window);

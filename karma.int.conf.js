@@ -6,7 +6,7 @@ module.exports = function(config) {
     files: [
       'c3.css',
       'spec/*-helper.js',
-      'spec/*-spec.js'
+      'spec/interaction-spec.js'
     ],
     preprocessors: {
       'spec/*.js': ['browserify']
@@ -21,7 +21,7 @@ module.exports = function(config) {
     },
     autoWatch: true,
     browsers: ['Chrome'],
-    singleRun: true,
+    singleRun: false,
     browserNoActivityTimeout: 120000,
   })
 };
