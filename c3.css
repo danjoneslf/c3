@@ -1,6 +1,6 @@
 /*-- Chart --*/
 .c3 svg {
-  font: 10px sans-serif;
+  font: 1em sans-serif;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
@@ -34,7 +34,7 @@
 
 .c3-chart-arc text {
   fill: #fff;
-  font-size: 13px;
+  font-size: 1em;
 }
 
 /*-- Axis --*/
@@ -117,7 +117,7 @@
 /*-- Select - Drag --*/
 /*-- Legend --*/
 .c3-legend-item {
-  font-size: 12px;
+  font-size: 1em;
 }
 
 .c3-legend-item-hidden {
@@ -133,7 +133,7 @@
 
 /*-- Title --*/
 .c3-title {
-  font: 14px sans-serif;
+  font: 1.5em sans-serif;
 }
 
 /*-- Tooltip --*/
@@ -158,14 +158,14 @@
 
 .c3-tooltip th {
   background-color: #aaa;
-  font-size: 14px;
+  font-size: 1em;
   padding: 2px 5px;
   text-align: left;
   color: #FFF;
 }
 
 .c3-tooltip td {
-  font-size: 13px;
+  font-size: 1em;
   padding: 3px 6px;
   background-color: #fff;
   border-left: 1px dotted #999;
@@ -173,8 +173,8 @@
 
 .c3-tooltip td > span {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 1em;
+  height: 1em;
   margin-right: 6px;
 }
 
@@ -191,7 +191,7 @@
 /*-- Arc --*/
 .c3-chart-arcs-title {
   dominant-baseline: middle;
-  font-size: 1.3em;
+  font-size: 1em;
 }
 
 .c3-chart-arcs .c3-chart-arcs-background {
@@ -201,7 +201,7 @@
 
 .c3-chart-arcs .c3-chart-arcs-gauge-unit {
   fill: #000;
-  font-size: 16px;
+  font-size: 1em;
 }
 
 .c3-chart-arcs .c3-chart-arcs-gauge-max {

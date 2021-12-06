@@ -1,4 +1,4 @@
-/* @license C3.js v0.7.9 | (c) C3 Team and other contributors | http://c3js.org/ */
+/* @license C3.js v0.7.20 | (c) C3 Team and other contributors | http://c3js.org/ */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -195,6 +195,24 @@
     var yEnd = box.y - sensitivity;
     return xStart < point[0] && point[0] < xEnd && yEnd < point[1] && point[1] < yStart;
   };
+  /**
+   * Return the px size of 1em for the given element.
+   *
+   * @param {Element} el The chart container element
+   */
+
+  var getEmSize = function getEmSize(el) {
+    var pxSize, computed;
+
+    if (_typeof(el) === 'object' && el.hasOwnProperty("nodeName")) {
+      computed = getComputedStyle(el, "").fontSize;
+      pxSize = Number(computed.match(/([\.\d]+)px/)[1]);
+    } else {
+      pxSize = 16;
+    }
+
+    return pxSize;
+  };
 
   function AxisInternal(component, params) {
     var internal = this;
@@ -241,10 +259,30 @@
     var internal = this;
     var i,
         domain,
-        ticks = [];
+        ticks = [],
+        tickValues;
 
     if (scale.ticks) {
-      return scale.ticks.apply(scale, internal.tickArguments);
+      // DJ This is where the ticks are dynamically generated
+      var textSize, axisHeight, isYAxis, isTooBig;
+      tickValues = scale.ticks.apply(scale, internal.tickArguments);
+      textSize = internal.component.owner.config.parent_em_size;
+      axisHeight = internal.component.owner.height; // DJ There must be a better way to know it's a Y axis
+
+      isYAxis = ["left", "right"].indexOf(internal.orient) > -1;
+      isTooBig = tickValues.length * textSize > axisHeight;
+
+      if (isYAxis && isTooBig) {
+        while (isTooBig) {
+          // drop alternate tick values to reduce number of ticks
+          tickValues = tickValues.filter(function (a, i) {
+            return i % 2 === 1;
+          });
+          isTooBig = tickValues.length * textSize > axisHeight;
+        }
+      }
+
+      return tickValues;
     }
 
     domain = scale.domain();
@@ -437,7 +475,7 @@
       if (internal.isVertical()) {
         dy = -((d.length - 1) * (internal.tickTextCharSize.h / 2) - 3);
       } else {
-        dy = ".71em";
+        dy = "1em";
       }
     }
 
@@ -1046,34 +1084,40 @@
   Axis.prototype.dyForXAxisLabel = function dyForXAxisLabel() {
     var $$ = this.owner,
         config = $$.config,
-        position = this.getXAxisLabelPosition();
+        position = this.getXAxisLabelPosition(); // font
+
+    var emSize = config.parent_em_size;
 
     if (config.axis_rotated) {
-      return position.isInner ? "1.2em" : -25 - ($$.config.axis_x_inner ? 0 : this.getMaxTickWidth('x'));
+      return position.isInner ? parseInt(1.2 * emSize) : parseInt(-2.5 * emSize) - ($$.config.axis_x_inner ? 0 : this.getMaxTickWidth('x'));
     } else {
-      return position.isInner ? "-0.5em" : $$.getHorizontalAxisHeight('x') - 10;
+      return position.isInner ? parseInt(-0.5 * emSize) : $$.getHorizontalAxisHeight('x') + parseInt(0.5 * emSize);
     }
   };
 
   Axis.prototype.dyForYAxisLabel = function dyForYAxisLabel() {
     var $$ = this.owner,
-        position = this.getYAxisLabelPosition();
+        position = this.getYAxisLabelPosition(); // font
+
+    var emSize = $$.config.parent_em_size;
 
     if ($$.config.axis_rotated) {
-      return position.isInner ? "-0.5em" : "3em";
+      return position.isInner ? parseInt(-0.5 * emSize) : parseInt(3 * emSize);
     } else {
-      return position.isInner ? "1.2em" : -10 - ($$.config.axis_y_inner ? 0 : this.getMaxTickWidth('y') + 10);
+      return position.isInner ? parseInt(1.2 * emSize) : parseInt(-1.0 * emSize) - ($$.config.axis_y_inner ? 0 : this.getMaxTickWidth('y') + parseInt(1.0 * emSize));
     }
   };
 
   Axis.prototype.dyForY2AxisLabel = function dyForY2AxisLabel() {
     var $$ = this.owner,
-        position = this.getY2AxisLabelPosition();
+        position = this.getY2AxisLabelPosition(); // font
+
+    var emSize = $$.config.parent_em_size;
 
     if ($$.config.axis_rotated) {
-      return position.isInner ? "1.2em" : "-2.2em";
+      return position.isInner ? parseInt(1.2 * emSize) : parseInt(-2.2 * emSize);
     } else {
-      return position.isInner ? "-0.5em" : 15 + ($$.config.axis_y2_inner ? 0 : this.getMaxTickWidth('y2') + 15);
+      return position.isInner ? parseInt(-0.5 * emSize) : parseInt(2 * emSize) + ($$.config.axis_y2_inner ? 0 : this.getMaxTickWidth('y2') + parseInt(2 * emSize));
     }
   };
 
@@ -1272,6 +1316,19 @@
     } else {
       throw Error('url or json or rows or columns is required.');
     }
+  };
+
+  ChartInternal.prototype.setDefaultFontSize = function () {
+    var $$ = this,
+        el,
+        emSize;
+    el = $$.d3.select($$.config.bindto).node();
+    emSize = getEmSize(el);
+    $$.config.parent_em_size = emSize;
+    $$.config.legend_item_tile_width = emSize;
+    $$.config.legend_item_tile_height = emSize;
+    $$.config.point_r = parseInt(emSize / 4);
+    $$.config.point_sensitivity = parseInt(emSize / 4);
   };
 
   ChartInternal.prototype.initParams = function () {
@@ -6616,7 +6673,17 @@
       } else {
         return undefined;
       }
+    } // DJ
+    // override font size defaults before loading
+    // custom config.
+    // avoids overwriting explicit user settings
+
+
+    if (config.bindto) {
+      this.config.bindto = config.bindto;
     }
+
+    this.setDefaultFontSize(); // DJ
 
     Object.keys(this_config).forEach(function (key) {
       target = config;
@@ -9629,7 +9696,10 @@
   };
 
   ChartInternal.prototype.redrawBar = function (drawBar, withTransition, transition) {
-    return [(withTransition ? this.mainBar.transition(transition) : this.mainBar).attr('d', drawBar).style("stroke", this.color).style("fill", this.color).style("opacity", 1)];
+    var $$ = this;
+    return [(withTransition ? this.mainBar.transition(transition) : this.mainBar).attr('d', drawBar).style("stroke", this.color).style("fill", this.color).style("opacity", function (d) {
+      return $$.isTargetToShow(d.id) ? 1 : 0;
+    })];
   };
 
   ChartInternal.prototype.getBarW = function (axis, barTargetsNum) {
